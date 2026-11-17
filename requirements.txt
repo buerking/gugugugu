@@ -1,0 +1,3 @@
+# 统一依赖：sub-push 主进程 + big VIP（AI/邮件）共用
+-r sub-push/requirements.txt
+-r big/requirements.txt

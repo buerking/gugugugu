@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "generated_at": 1761789600,
+  "subscriptions": [
+    {
+      "subscription_id": "sub_10001",
+      "match_type": "keyword",
+      "keyword": "千恋万花",
+      "sources": ["mercari", "paypay"],
+      "category_id": "75",
+      "brand_id": "",
+      "price_min": 300,
+      "price_max": 500,
+      "exclude_keyword": ""
+    },
+    {
+      "subscription_id": "sub_10002",
+      "match_type": "keyword",
+      "keyword": "エロマンガ先生",
+      "sources": ["mercari"],
+      "category_id": "75",
+      "price_min": 300,
+      "price_max": 500
+    },
+    {
+      "subscription_id": "sub_20001",
+      "match_type": "seller",
+      "web_id": "mercari",
+      "seller_id": "488768874"
+    },
+    {
+      "subscription_id": "sub_20002",
+      "match_type": "seller",
+      "web_id": "paypay",
+      "seller_id": "p10021425"
+    },
+    {
+      "subscription_id": "sub_20003",
+      "match_type": "seller",
+      "web_id": "yahoo_auction",
+      "seller_id": "4VhAdiaCsN7Mw7skrNTKDMxdpnfP2"
+    }
+  ]
+}

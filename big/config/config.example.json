@@ -1,0 +1,143 @@
+{
+  "schedule_interval_seconds": 30,
+  "schedule_interval_minutes": 0.5,
+  "log_level": "INFO",
+  "sources": {
+    "mercari": true,
+    "paypay": true,
+    "yahoo_auction": true
+  },
+  "deepseek": {
+    "api_key": "",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "enabled": true,
+    "timeout_seconds": 60
+  },
+  "fx": {
+    "api_key": "",
+    "base": "JPY",
+    "quote": "CNY",
+    "comment": "ExchangeRate-API v6。按本地日期缓存到 data/fx_jpy_cny.json，同一天只请求一次。"
+  },
+  "wecom": {
+    "corp_id": "",
+    "corp_secret": "",
+    "agent_id": 1000010,
+    "default_mode": "external_contact",
+    "comment": "corp 已配自建应用 group_send。发个人微信还需 wecom_external_userid + 客户联系权限；agent_id 主要用于 app 模式"
+  },
+  "email": {
+    "enabled": true,
+    "smtp_host": "smtp.163.com",
+    "smtp_port": 465,
+    "use_ssl": true,
+    "use_starttls": false,
+    "smtp_user": "",
+    "smtp_password": "",
+    "from_addr": "",
+    "from_name": "福利君",
+    "default_to": "",
+    "comment": "163 邮箱 SMTP SSL 465；smtp_password 为授权码"
+  },
+  "yahoo_auction": {
+    "cookie": "",
+    "limit": 48,
+    "sort": "-FIRST_START_TIME",
+    "status": "OPEN",
+    "seller_types": [
+      "AUCTION",
+      "AUC_STORE"
+    ],
+    "comment": "seller_types 合法: AUCTION/AUC_STORE/FLEAMARKET；不含 FLEAMARKET 即排除闲置。新着 -FIRST_START_TIME"
+  },
+  "test": {
+    "ai_max_items_per_user": 40,
+    "save_report_dir": "data/reports"
+  },
+  "mercari": {
+    "page_size": 120,
+    "with_auction": true,
+    "sort": "SORT_CREATED_TIME",
+    "order": "ORDER_DESC",
+    "laplace_device_uuid": ""
+  },
+  "paypay": {
+    "results": 100,
+    "comment": "代码内 sort=openTime&order=DESC（按上架时间新到旧）"
+  },
+  "paths": {
+    "subscriptions": "config/subscriptions.json",
+    "reference_items": "config/reference_items.md",
+    "seen_state": "data/seen_ids.json",
+    "dpop_key": "config/dpop_es256_key.pem"
+  },
+  "logistics": {
+    "enabled": true,
+    "storage_code": "GMCWD",
+    "admin_list_url": "",
+    "keywords": [
+      "等待用户缴税",
+      "提交申报材料",
+      "地址待确认",
+      "您的邮件已",
+      "派送"
+    ],
+    "keyword_aliases": {
+      "等待用户缴税": [
+        "税関検査のため税関へ提示",
+        "通関手続中",
+        "課税"
+      ],
+      "提交申报材料": [
+        "通関手続",
+        "税関へ提示",
+        "税関検査"
+      ],
+      "地址待确认": [
+        "收件人详细地址待确认",
+        "与收件人再次联系",
+        "地址不详",
+        "无法联系收件人",
+        "联系不上收件人",
+        "Retention"
+      ],
+      "您的邮件已": [
+        "ご不在",
+        "郵便物をお預かり"
+      ],
+      "派送": [
+        "配達中",
+        "お届け先にお届け",
+        "配達"
+      ]
+    },
+    "reuse_edge_profile": true,
+    "edge_profile": "Default",
+    "edge_user_data": "",
+    "edge_binary": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "edge_debug_port": 9333,
+    "edge_sync_login": true,
+    "edi_credentials_path": "config/edi_credentials.json",
+    "track_provider": "17track",
+    "track17_api_token": "",
+    "track17_lang": "zh",
+    "track17_wait_seconds": 4,
+    "track17_retries": 4,
+    "track17_retry_interval": 3,
+    "tsuiseki_carrier": "post",
+    "tsuiseki_delay_seconds": 0.4,
+    "track_http_timeout": 25,
+    "max_pages": 1,
+    "seen_path": "data/logistics_seen.json",
+    "scrape_hour": 11,
+    "scrape_minute": 0,
+    "poll_interval_minutes": 60,
+    "poll_window_start_hour": 7,
+    "poll_window_end_hour": 21,
+    "poll_right_after_scrape": true,
+    "daemon_tick_seconds": 20,
+    "login_captcha_wait_seconds": 180,
+    "comment": "每日 11:00 抓号。查轨迹仅 7:00–21:00（不含 21 点）每 60 分钟一轮，夜间不查。关键词更新约 98% 落在该时段。17TRACK 优先，回退追跡なう。登录若出现点击验证码请在 Edge 内手动完成，勿强刷；最长等待 login_captcha_wait_seconds 秒。"
+  }
+}

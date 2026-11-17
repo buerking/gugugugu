@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "generated_at": 1761789600,
+  "subscriptions": [
+    {
+      "subscription_id": "sub_10001",
+      "match_type": "keyword",
+      "keyword": "千恋万花",
+      "sources": ["mercari", "paypay"],
+      "category_id": "75",
+      "price_min": 300,
+      "price_max": 500
+    },
+    {
+      "subscription_id": "sub_20001",
+      "match_type": "seller",
+      "web_id": "mercari",
+      "seller_id": "488768874"
+    }
+  ]
+}

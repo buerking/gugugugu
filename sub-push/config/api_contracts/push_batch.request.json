@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "run_id": "run-1761790000",
+  "generated_at": 1761790123,
+  "client": "sub-push",
+  "interval_minutes": 5,
+  "stats": {
+    "job_count": 42,
+    "raw_item_count": 3602,
+    "fresh_item_count": 17,
+    "subscription_count": 2
+  },
+  "results": [
+    {
+      "subscription_id": "sub_10001",
+      "item_count": 2,
+      "items": [
+        {
+          "title": "示例商品标题",
+          "price": 3500,
+          "thumbnail": "https://static.mercdn.net/item/detail/orig/photos/m95525968401_1.jpg",
+          "item_id": "m95525968401",
+          "item_key": "mercari:m95525968401",
+          "item_url": "https://jp.mercari.com/item/m95525968401",
+          "source_site": "mercari",
+          "currency": "JPY",
+          "listing_type": "buy_now",
+          "status": "on_sale",
+          "created": 1761789000,
+          "updated": 1761789000,
+          "matched_at": 1761790123
+        },
+        {
+          "title": "另一件示例",
+          "price": 2800,
+          "thumbnail": "https://paypayfleamarket.yahoo.co.jp/images/example.jpg",
+          "item_id": "z713793136",
+          "item_key": "paypay:z713793136",
+          "item_url": "https://paypayfleamarket.yahoo.co.jp/item/z713793136",
+          "source_site": "paypay",
+          "currency": "JPY",
+          "listing_type": "buy_now",
+          "status": "on_sale",
+          "created": 1761789100,
+          "updated": 1761789100,
+          "matched_at": 1761790123
+        }
+      ]
+    },
+    {
+      "subscription_id": "sub_20001",
+      "item_count": 1,
+      "items": [
+        {
+          "title": "卖家新上架示例",
+          "price": 1200,
+          "thumbnail": "https://static.mercdn.net/item/detail/orig/photos/m111_1.jpg",
+          "item_id": "m111",
+          "item_key": "mercari:m111",
+          "item_url": "https://jp.mercari.com/item/m111",
+          "source_site": "mercari",
+          "currency": "JPY",
+          "listing_type": "buy_now",
+          "status": "on_sale",
+          "created": 1761789200,
+          "updated": 1761789200,
+          "matched_at": 1761790123
+        }
+      ]
+    }
+  ]
+}

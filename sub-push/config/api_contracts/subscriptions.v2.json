@@ -1,0 +1,28 @@
+{
+  "_deprecated": "正式接口请用 subscriptions.v3.json（无用户信息的订阅 list）。本文件仅作本地旧格式对照。",
+  "version": 2,
+  "generated_at": 1761789600,
+  "users": [
+    {
+      "sub_user_id": "GJUTG",
+      "user_email": "qiekeji@outlook.com",
+      "keywords": [
+        {
+          "subscription_id": "sub_10001",
+          "keyword": "千恋万花",
+          "category_id": "75",
+          "price_min": 300,
+          "price_max": 500,
+          "sources": ["mercari", "paypay"]
+        }
+      ],
+      "sellers": [
+        {
+          "subscription_id": "sub_20001",
+          "web_id": "mercari",
+          "seller_id": "488768874"
+        }
+      ]
+    }
+  ]
+}

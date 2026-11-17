@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "accepted_item_keys": [
+    "mercari:m95525968401",
+    "paypay:z713793136",
+    "mercari:m111"
+  ],
+  "rejected": [
+    {
+      "subscription_id": "sub_999",
+      "item_key": "mercari:m00000000000",
+      "reason": "subscription_not_found"
+    }
+  ]
+}

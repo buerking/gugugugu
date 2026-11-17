@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+
+# 密钥与本地状态（根目录 .gitignore 亦有兜底）
+config/config.json
+config/secrets.local.json
+config/*.local.json
+config/dpop_es256_key.pem
+config/*.pem
+config/edi_credentials.json
+config/subscriptions.json
+data/*
+!data/.gitkeep

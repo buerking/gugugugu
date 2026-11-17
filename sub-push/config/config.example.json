@@ -1,0 +1,211 @@
+{
+  "app": {
+    "log_level": "INFO",
+    "gui_verbose": true,
+    "schedule_interval_minutes": 5,
+    "search_concurrency": 5
+  },
+  "middle_layer": {
+    "enabled": true,
+    "slice_size": 80,
+    "ttl_days": 7,
+    "persist_path": "data/subscription_middle.json",
+    "mix_vip": true,
+    "comment": "订阅接口刷新公共后与 VIP 均匀混编再切片。煤炉多时可填闲置空隙；片内搜索引擎还会 paypay/other 交错。ttl_days=订阅有效期。"
+  },
+  "feishu": {
+    "enabled": true,
+    "webhook_url": "",
+    "title_prefix": "[sub-push]",
+    "cooldown_seconds": 300,
+    "timeout_seconds": 10
+  },
+  "watchdog": {
+    "max_retries_per_round": 2,
+    "retry_delay_seconds": 15,
+    "fail_notify_after": 1,
+    "stale_alert_seconds": 1800,
+    "heartbeat_check_seconds": 60,
+    "alive_notify_seconds": 0,
+    "notify_on_start": true,
+    "notify_on_stop": false,
+    "comment": "一轮失败重试2次；连续失败飞书告警；1800秒无成功则心跳超时告警。alive_notify_seconds>0 可周期报活"
+  },
+  "http": {
+    "transport": "curl",
+    "connect_timeout": 5,
+    "max_time": 10,
+    "retries": 0,
+    "comment": "单次搜索最长 10s，超时直接放弃；本机用 curl(Schannel)"
+  },
+  "search_pool": {
+    "per_worker_capacity": 5,
+    "min_workers": 1,
+    "max_workers": 3,
+    "serial_below_or_equal": 5,
+    "comment": "压测：workers=3 稳定且均时最好；=5 虽全成功但 SSL 回退增多、均时变差，先用 3"
+  },
+  "memory": {
+    "gc_enabled": true,
+    "gc_every_workers": 1,
+    "gc_every_jobs": 25,
+    "title_max_chars": 200
+  },
+  "ai": {
+    "enabled": false,
+    "note": "AI 识别仅 big 项目使用，sub-push 公共任务不跑 DeepSeek"
+  },
+  "time_window": {
+    "watermark_slack_seconds": 60,
+    "no_watermark_factor": 1.5,
+    "max_lookback_hours": 24,
+    "drop_items_without_time": false
+  },
+  "storage": {
+    "result_dir": "search_results",
+    "archive_dir_name": "old"
+  },
+  "seen": {
+    "sqlite_path": "data/seen_items.sqlite3"
+  },
+  "purchase": {
+    "prefix": "https://www.jpgoodbuy.com/purchase/"
+  },
+  "vip": {
+    "enabled": true,
+    "big_root": "",
+    "subscriptions_path": "",
+    "ai_max_items_per_user": 40,
+    "loop_idle_seconds": 5,
+    "comment": "VIP 混编进中间层同池搜索；AI+邮件进异步队列。big_root 留空=并列 ../big；也可填相对/绝对路径。subscriptions 默认 big/config/subscriptions.json"
+  },
+  "subscription_api": {
+    "enabled": true,
+    "dry_run": false,
+    "base_url": "https://p.jpkix.com/yii/web/index.php",
+    "route_prefix": "home/api",
+    "sign_key": "",
+    "get_action": "get-search-subscriptions",
+    "push_action": "push-search-subscription-hits",
+    "timeout_seconds": 30,
+    "max_pages": 100,
+    "max_groups_per_request": 1000,
+    "max_items_per_request": 5000,
+    "comment": "后端就绪后 enabled=true 即可；测试与正式同一套接口/真实订阅，只换 base_url（若有测试机）。无单独假数据模式。"
+  },
+  "backend_push": {
+    "enabled": false,
+    "dry_run": true,
+    "url": "",
+    "token": "",
+    "timeout_seconds": 30,
+    "max_subscriptions_per_request": 50,
+    "comment": "旧占位；正式链路用 subscription_api"
+  },
+  "ftp": {
+    "host": "",
+    "port": 21,
+    "user": "",
+    "password": "",
+    "web_prefix": ""
+  },
+  "paths": {
+    "dpop_key": "config/dpop_es256_key.pem"
+  },
+  "sources": {
+    "mercari": {
+      "enabled": true,
+      "page_size": 120,
+      "with_auction": true,
+      "sort": "SORT_CREATED_TIME",
+      "order": "ORDER_DESC",
+      "laplace_device_uuid": "",
+      "base_url": "https://api.jpkix.com/web/index.php",
+      "secret_key": ""
+    },
+    "paypay": {
+      "enabled": true,
+      "results": 30,
+      "serial": true,
+      "request_gap_ms_min": 100,
+      "request_gap_ms_max": 200,
+      "request_gap_ms": 200,
+      "comment": "串行；同 worker 连续不睡，跨 worker 才 gap。优先 min~max 随机(ms)，未配则用 request_gap_ms",
+      "search_url": "https://paypayfleamarket.yahoo.co.jp/api/v1/search",
+      "item_url_template": "https://paypayfleamarket.yahoo.co.jp/item/{item_id}",
+      "default_params": {
+        "results": 30,
+        "imageShape": "square",
+        "sort": "openTime",
+        "order": "DESC",
+        "webp": "false",
+        "itemStatus": "open",
+        "offset": 0,
+        "queryTarget": ":8",
+        "module": "catalog:hit:21",
+        "rewriteQueryType": "WAND",
+        "optional": "searchCondition"
+      }
+    },
+    "yahoo_auction": {
+      "enabled": true,
+      "limit": 48,
+      "sort": "-FIRST_START_TIME",
+      "status": "OPEN",
+      "seller_types": [
+        "AUCTION",
+        "AUC_STORE"
+      ],
+      "cookie": "",
+      "comment": "卖家上新：POST search/v3，aucUserIds=[卖家页路径 aucUserId]；sellerTypes 排除 FLEAMARKET"
+    }
+  },
+  "subscriptions": {
+    "json_path": "config/subscriptions.json",
+    "python_module_path": "../subscriptions.py"
+  },
+  "seller_subscriptions": {
+    "json_path": "config/seller_subscriptions.json"
+  },
+  "keyword_title_filter": {
+    "enabled": true,
+    "min_other_token_match_ratio": 0.6,
+    "stoplist_extra": []
+  },
+  "mer_price_watches": {
+    "json_path": "config/mer_price_watches.json",
+    "state_path": "config/mer_price_watch_state.json",
+    "batch_size": 50,
+    "jpkix_app_id": "purchase_good_info"
+  },
+  "field_mapping": {
+    "subscription_schema": [
+      "subscription_id",
+      "keyword",
+      "category_id",
+      "sub_user_id",
+      "user_email",
+      "user_phone",
+      "created_time",
+      "brand_id",
+      "price_min",
+      "price_max",
+      "sources",
+      "exclude_keyword"
+    ],
+    "source_request_mapping": {
+      "mercari": {
+        "keyword": "keyword",
+        "category_id": "category_id",
+        "brand_id": "brand_id",
+        "price_min": "price_min",
+        "price_max": "price_max"
+      },
+      "paypay": {
+        "query": "keyword",
+        "minPrice": "price_min",
+        "maxPrice": "price_max"
+      }
+    }
+  }
+}
