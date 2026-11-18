@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, Optional
 
@@ -40,11 +41,14 @@ class PrimaryHeartbeat:
                 self._httpd.shutdown()
             except Exception:
                 pass
+            try:
+                self._httpd.server_close()
+            except Exception:
+                pass
             self._httpd = None
 
     def _start_http(self, cfg: Dict[str, Any]) -> None:
         http_cfg = dict(cfg.get("http_health") or {})
-        # 生产启用灾备时默认开 health；仅当显式 enabled=false 才关
         if "enabled" in http_cfg and not http_cfg.get("enabled"):
             self.log.warning("failover.http_health.enabled=false，未启动 /health")
             return
@@ -53,37 +57,62 @@ class PrimaryHeartbeat:
         node = str(cfg.get("node_id") or default_node_id())
         stale = float(cfg.get("stale_seconds") or 180)
         role = str(cfg.get("role") or "primary")
+        log = self.log
 
         class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.0"
+
             def do_GET(self):  # noqa: N802
-                path = self.path.split("?")[0]
-                if path not in ("/health", "/"):
-                    self.send_response(404)
-                    self.end_headers()
-                    return
-                body_obj = health_payload(
-                    node_id=node, role=role, stale_seconds=stale
-                )
-                raw = json.dumps(body_obj, ensure_ascii=False).encode("utf-8")
-                # alive=false 仍返回 200，由客户端看字段；进程都起不来才会连不上
-                self.send_response(200)
+                try:
+                    path = (self.path or "/").split("?")[0]
+                    if path not in ("/health", "/"):
+                        body = b'{"ok":false,"error":"not_found"}'
+                        self._write(404, body)
+                        return
+                    body_obj = health_payload(
+                        node_id=node, role=role, stale_seconds=stale
+                    )
+                    raw = json.dumps(body_obj, ensure_ascii=False).encode("utf-8")
+                    self._write(200, raw)
+                except Exception as exc:
+                    log.warning("health handler error: %s\n%s", exc, traceback.format_exc())
+                    err = json.dumps(
+                        {"ok": False, "error": str(exc)}, ensure_ascii=False
+                    ).encode("utf-8")
+                    try:
+                        self._write(500, err)
+                    except Exception:
+                        pass
+
+            def _write(self, code: int, raw: bytes) -> None:
+                self.send_response(code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(raw)))
+                self.send_header("Connection", "close")
                 self.end_headers()
                 self.wfile.write(raw)
+                try:
+                    self.wfile.flush()
+                except Exception:
+                    pass
 
             def log_message(self, fmt: str, *args: Any) -> None:
                 return
 
         try:
             self._httpd = ThreadingHTTPServer((host, port), Handler)
+            # 避免 TIME_WAIT 占端口导致重启失败
+            self._httpd.allow_reuse_address = True
         except Exception as exc:
             self.log.warning("灾备 HTTP health 启动失败: %s", exc)
             return
 
         def _serve() -> None:
             assert self._httpd is not None
-            self._httpd.serve_forever(poll_interval=0.5)
+            try:
+                self._httpd.serve_forever(poll_interval=0.5)
+            except Exception as exc:
+                log.warning("health serve_forever 退出: %s", exc)
 
         self._http_thread = threading.Thread(
             target=_serve, daemon=True, name="failover-http"
