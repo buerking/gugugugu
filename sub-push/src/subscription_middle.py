@@ -18,6 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src import settings
 from src.subscriptions_index import SearchJob, jobs_from_backend_rows
+# 必须在模块加载时绑定：VIP AI 的 use_big_src 会清空 sys.modules['src.*']，
+# 若在 refresh 时再懒加载 hold_subpush_src，会报 No module named 'src.vip'。
+from src.vip.big_bridge import hold_subpush_src
 
 
 logger = logging.getLogger(__name__)
@@ -157,35 +160,33 @@ class SubscriptionMiddle:
 
     def refresh_from_api(self) -> Dict[str, Any]:
         """拉取订阅接口，混编 VIP 后整表替换中间层并重新切片。"""
-        # 与 VIP AI 的 use_big_src 互斥，避免 import 到 big 的 src.pipeline
-        from src.vip.big_bridge import hold_subpush_src
-
+        # 整段持锁：含 jpkix / VIP loader；勿再懒加载 hold（见模块顶 import）
         with hold_subpush_src():
             from src.pipeline import jpkix_api
 
             rows = jpkix_api.fetch_all_subscriptions()
-        public = jobs_from_backend_rows(rows)
-        for j in public:
-            j.delivery = "backend"
-        public = self._filter_ttl(public)
-        vip = self._load_vip_jobs()
-        with self._lock:
-            self.rows = [dict(r) for r in rows if isinstance(r, dict)]
-            self.epoch_id += 1
-            self.refreshed_at = time.time()
-            self.last_error = ""
-            self._apply_jobs_unlocked(public, vip)
-            meta = {
-                "epoch_id": self.epoch_id,
-                "jobs": len(self.jobs),
-                "public_jobs": len(self.public_jobs),
-                "vip_jobs": len(self.vip_jobs),
-                "mix_vip": self.mix_vip(),
-                "slices": len(self.slices),
-                "slice_size": self.slice_size(),
-                "raw_rows": len(self.rows),
-            }
-            self._save_persist_unlocked()
+            public = jobs_from_backend_rows(rows)
+            for j in public:
+                j.delivery = "backend"
+            public = self._filter_ttl(public)
+            vip = self._load_vip_jobs()
+            with self._lock:
+                self.rows = [dict(r) for r in rows if isinstance(r, dict)]
+                self.epoch_id += 1
+                self.refreshed_at = time.time()
+                self.last_error = ""
+                self._apply_jobs_unlocked(public, vip)
+                meta = {
+                    "epoch_id": self.epoch_id,
+                    "jobs": len(self.jobs),
+                    "public_jobs": len(self.public_jobs),
+                    "vip_jobs": len(self.vip_jobs),
+                    "mix_vip": self.mix_vip(),
+                    "slices": len(self.slices),
+                    "slice_size": self.slice_size(),
+                    "raw_rows": len(self.rows),
+                }
+                self._save_persist_unlocked()
         logger.info(
             "中间层已刷新 epoch=%s public=%s vip=%s mixed=%s slices=%s size=%s",
             meta["epoch_id"],

@@ -36,9 +36,14 @@ def use_big_src() -> Iterator[None]:
     if not root:
         raise RuntimeError("VIP.big_root 未配置")
 
+    # 锁模块本身不能卸：其它线程可能正等 hold_subpush_src（已绑定到本模块）
+    _keep = {"src.vip.big_bridge"}
+
     with _SRC_LOCK:
         stashed: Dict[str, object] = {}
         for key in list(sys.modules):
+            if key in _keep:
+                continue
             if key == "src" or key.startswith("src."):
                 stashed[key] = sys.modules.pop(key)
 
@@ -48,6 +53,8 @@ def use_big_src() -> Iterator[None]:
             yield
         finally:
             for key in list(sys.modules):
+                if key in _keep:
+                    continue
                 if key == "src" or key.startswith("src."):
                     sys.modules.pop(key, None)
             sys.modules.update(stashed)

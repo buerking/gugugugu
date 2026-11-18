@@ -12,6 +12,9 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+# 顶层绑定，避免 VIP use_big_src 清空 sys.modules 后懒加载失败
+from src.vip.big_bridge import hold_subpush_src  # noqa: E402
+
 
 @dataclass
 class SearchJob:
@@ -388,23 +391,25 @@ def load_search_jobs(
         pub_n = len(jobs)
         fmt = "middle_layer"
     else:
-        from src.vip.big_bridge import hold_subpush_src
-
         with hold_subpush_src():
             from src.pipeline import jpkix_api
 
             rows = jpkix_api.fetch_all_subscriptions()
-        jobs = jobs_from_backend_rows(rows)
-        for j in jobs:
-            j.delivery = "backend"
-        pub_n = len(jobs)
-        fmt = "backend_api"
+            jobs = jobs_from_backend_rows(rows)
+            for j in jobs:
+                j.delivery = "backend"
+            pub_n = len(jobs)
+            fmt = "backend_api"
 
     vip_jobs: List[SearchJob] = []
     if include_vip:
+        # from_middle 且已 mix 时可能重复；兼容入口保持原行为
         vip_jobs = load_vip_jobs(default_sources=default_sources)
-        jobs.extend(vip_jobs)
-        if vip_jobs:
+        if not from_middle:
+            jobs.extend(vip_jobs)
+            if vip_jobs:
+                fmt = f"{fmt}+vip"
+        elif vip_jobs and "+vip" not in fmt:
             fmt = f"{fmt}+vip"
     meta: Dict[str, Any] = {
         "format": fmt,
