@@ -214,3 +214,28 @@ HTTP: Dict[str, Any] = {
     "max_time": int(_http["max_time"] if "max_time" in _http else 10),
     "retries": int(_http["retries"] if "retries" in _http else 0),
 }
+
+# 主备灾备：生产写共享心跳；开发端监控失联后接管
+_fo = CONFIG.get("failover") or {}
+_fo_http = _fo.get("http_health") or {}
+FAILOVER: Dict[str, Any] = {
+    "enabled": bool(_fo.get("enabled", False)),
+    # primary=生产写心跳；standby 用单独脚本，不靠这个字段跑搜索
+    "role": str(_fo.get("role") or "primary"),
+    "interval_seconds": float(_fo.get("interval_seconds") or 30),
+    "check_interval_seconds": float(
+        _fo.get("check_interval_seconds") or _fo.get("interval_seconds") or 30
+    ),
+    "stale_seconds": float(_fo.get("stale_seconds") or 180),
+    "fail_checks_before_takeover": int(_fo.get("fail_checks_before_takeover") or 2),
+    "ok_checks_before_release": int(_fo.get("ok_checks_before_release") or 2),
+    "node_id": str(_fo.get("node_id") or "").strip(),
+    "standby_primary_url": str(_fo.get("standby_primary_url") or "").strip(),
+    "http_timeout_seconds": float(_fo.get("http_timeout_seconds") or 5),
+    "http_health": {
+        # 生产启用灾备时默认开 /health；仅显式 false 关闭
+        "enabled": bool(_fo_http.get("enabled", True)),
+        "host": str(_fo_http.get("host") or "0.0.0.0"),
+        "port": int(_fo_http.get("port") or 18765),
+    },
+}

@@ -207,5 +207,23 @@
         "maxPrice": "price_max"
       }
     }
+  },
+  "failover": {
+    "enabled": false,
+    "role": "primary",
+    "standby_primary_url": "",
+    "interval_seconds": 30,
+    "check_interval_seconds": 30,
+    "stale_seconds": 180,
+    "fail_checks_before_takeover": 2,
+    "ok_checks_before_release": 2,
+    "node_id": "",
+    "http_timeout_seconds": 5,
+    "http_health": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 18765
+    },
+    "comment": "HTTP 灾备。生产 role=primary 开 /health 返回内存最近请求时间；开发 role=standby + standby_primary_url=http://生产IP:18765/health。连不上或 activity_age>stale_seconds 则接管。"
   }
 }

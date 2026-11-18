@@ -60,6 +60,12 @@ def post_signed(action: str, payload: Dict[str, Any], *, timeout: Optional[float
         "Accept": "application/json",
         "User-Agent": "sub-push/1.0",
     }
+    try:
+        from src.failover.runtime_pulse import note_request
+
+        note_request("jpkix", action)
+    except Exception:
+        pass
     resp = requests.post(
         url,
         data={"data": data_str, "sign": sign},

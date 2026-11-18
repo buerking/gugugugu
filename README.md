@@ -28,6 +28,8 @@ python app.py
 - 说明见 [`docs/SECRETS.md`](docs/SECRETS.md)
 - VIP 默认并列 `../big`；`vip.big_root` 留空即可
 
+主备灾备（生产 `/health` + 开发端按 IP 探测接管）见 [`docs/FAILOVER.md`](docs/FAILOVER.md)。
+
 提交前建议：
 
 ```bat

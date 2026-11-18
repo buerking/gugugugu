@@ -49,6 +49,13 @@ def curl_request(
         if q:
             final_url = f"{url}{'&' if '?' in url else '?'}{q}"
 
+    try:
+        from src.failover.runtime_pulse import note_request
+
+        note_request("curl", f"{method.upper()} {final_url[:200]}")
+    except Exception:
+        pass
+
     fd, body_path = tempfile.mkstemp(prefix="subpush_curl_", suffix=".bin")
     os.close(fd)
     try:

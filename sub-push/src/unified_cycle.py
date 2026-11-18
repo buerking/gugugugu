@@ -184,6 +184,7 @@ class UnifiedRunner:
         self._public_baseline_done = False
 
         self.vip_ai = VipAiQueue(log=self.log)
+        self._failover_hb = None
 
     def start(self, *, run_baseline: bool = True) -> None:
         if self._thread and self._thread.is_alive():
@@ -196,6 +197,13 @@ class UnifiedRunner:
         self.paused = False
         self.started_at = time.time()
         self.vip_ai.start()
+        try:
+            from src.failover.primary import PrimaryHeartbeat
+
+            self._failover_hb = PrimaryHeartbeat(log=self.log)
+            self._failover_hb.start()
+        except Exception as exc:
+            self.log.warning("灾备心跳启动失败（忽略）: %s", exc)
         self._thread = threading.Thread(
             target=self._loop, args=(run_baseline,), daemon=True
         )
@@ -217,6 +225,12 @@ class UnifiedRunner:
         self._pause.set()
         self.running = False
         self.paused = False
+        try:
+            if self._failover_hb is not None:
+                self._failover_hb.stop()
+        except Exception:
+            pass
+        self._failover_hb = None
         try:
             self.vip_ai.stop()
         except Exception:
