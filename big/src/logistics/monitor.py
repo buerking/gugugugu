@@ -176,10 +176,11 @@ def _edge_profile() -> str:
 
 def build_edge() -> EdgeCDP:
     """只启动本机 Edge（msedge.exe），不碰 Chrome；调试口避开 Chrome 的 9222。"""
+    from src.logistics.edge_cdp import resolve_edge_binary
+
     cfg = _logistics_cfg()
-    binary = str(cfg.get("edge_binary") or EDGE_BINARY).strip() or EDGE_BINARY
-    if not os.path.exists(binary):
-        raise FileNotFoundError(f"未找到 Edge: {binary}")
+    preferred = str(cfg.get("edge_binary") or EDGE_BINARY).strip() or EDGE_BINARY
+    binary = resolve_edge_binary(preferred)
     port = int(cfg.get("edge_debug_port") or 9333)
     edge = EdgeCDP(
         user_data_dir=_edge_user_data(),

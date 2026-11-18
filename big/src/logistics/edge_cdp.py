@@ -24,9 +24,58 @@ import websocket
 
 logger = logging.getLogger(__name__)
 
-EDGE_BINARY = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+# 历史默认（x86）；生产机常见装在 Program Files，启动时会自动探测
+_EDGE_CANDIDATES = (
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+)
+EDGE_BINARY = _EDGE_CANDIDATES[0]
 # 避开 Chrome 常用的 9222
 DEFAULT_DEBUG_PORT = 9333
+
+
+def resolve_edge_binary(preferred: Optional[str] = None) -> str:
+    """按配置 → 常见安装路径 → where msedge 解析可执行文件。"""
+    candidates: List[str] = []
+    pref = (preferred or "").strip()
+    if pref:
+        candidates.append(pref)
+    candidates.extend(_EDGE_CANDIDATES)
+
+    # PATH / where
+    which = shutil.which("msedge") or shutil.which("msedge.exe")
+    if which:
+        candidates.append(which)
+    try:
+        completed = subprocess.run(
+            ["where", "msedge"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        for line in (completed.stdout or "").splitlines():
+            line = line.strip().strip('"')
+            if line:
+                candidates.append(line)
+    except Exception:
+        pass
+
+    seen = set()
+    for path in candidates:
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        if os.path.isfile(path):
+            if path != EDGE_BINARY:
+                logger.info("解析到 Edge 可执行文件: %s", path)
+            return path
+
+    tried = " | ".join(candidates[:6]) or "(无候选)"
+    raise FileNotFoundError(
+        "找不到 msedge.exe。请在 config.logistics.edge_binary 填写本机路径。"
+        f" 已尝试: {tried}"
+    )
 
 
 def default_logistics_user_data() -> str:
@@ -121,7 +170,7 @@ class EdgeCDP:
         self.user_data_dir = user_data_dir
         self.profile_directory = profile_directory
         self.port = int(port)
-        self.edge_binary = edge_binary
+        self.edge_binary = resolve_edge_binary(edge_binary)
         self.sync_login = sync_login
         self._proc: Optional[subprocess.Popen] = None
         self._ws: Optional[websocket.WebSocket] = None
@@ -130,7 +179,8 @@ class EdgeCDP:
         self._browser_info: Dict[str, Any] = {}
 
     def start(self) -> None:
-        if not os.path.exists(self.edge_binary):
+        self.edge_binary = resolve_edge_binary(self.edge_binary)
+        if not os.path.isfile(self.edge_binary):
             raise FileNotFoundError(f"找不到 Edge: {self.edge_binary}")
 
         self.port = self._pick_free_edge_port(self.port)

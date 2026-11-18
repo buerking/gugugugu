@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 title big 专供推送 GUI
@@ -10,20 +11,24 @@ echo  目录: %CD%
 echo ========================================
 echo.
 
-where python >nul 2>&1
-if %ERRORLEVEL%==0 (
-  python app.py
-) else (
-  where py >nul 2>&1
-  if %ERRORLEVEL%==0 (
-    py -3 app.py
-  ) else (
-    echo [错误] 未找到 python，请先安装或加入 PATH
-    pause
-    exit /b 1
-  )
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
+
+call "%~dp0..\_find_python.bat"
+if errorlevel 1 (
+  pause
+  exit /b 1
 )
 
 echo.
-echo GUI 已关闭。
+echo 启动 app.py ...
+"!PYTHON_EXE!" app.py %*
+set "EC=!ERRORLEVEL!"
+echo.
+if not "!EC!"=="0" (
+  echo GUI 异常退出 code=!EC!
+) else (
+  echo GUI 已关闭。
+)
 pause
+exit /b !EC!

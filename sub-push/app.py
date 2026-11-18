@@ -1,16 +1,19 @@
 """
-统一守护 GUI：左侧只展示线上公共订阅明细；VIP 只打少量日志。
+统一守护 GUI：普通订阅 + 大客户 VIP + 物流守护。
+左侧只展示线上公共订阅明细；VIP/物流只打摘要日志。
 """
 
 from __future__ import annotations
 
 import logging
 import queue
+import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import Any, Dict, List
 
 from src import settings
+from src.logistics_sidecar import LogisticsSidecar
 from src.runtime_board import BOARD
 from src.subscriptions_index import SearchJob, load_search_jobs
 from src.unified_cycle import UnifiedRunner
@@ -38,16 +41,19 @@ class TkQueueHandler(logging.Handler):
 
 
 class App(tk.Tk):
-    def __init__(self) -> None:
+    def __init__(self, *, auto_start: bool = False, with_logistics: bool = True) -> None:
         super().__init__()
-        self.title("上新统一守护")
+        self.title("上新统一守护（公共 + VIP + 物流）")
         self.geometry("1100x720")
         self.configure(bg="#f3f1ec")
+        self._auto_start = auto_start
+        self._with_logistics = with_logistics
 
         self.log_queue: "queue.Queue[str]" = queue.Queue()
         self._setup_logging()
         self.logger = logging.getLogger("unified-gui")
         self.runner = UnifiedRunner(log=self.logger)
+        self.logistics = LogisticsSidecar(log=self.logger)
         self.jobs: List[SearchJob] = []
 
         self._build_ui()
@@ -56,6 +62,8 @@ class App(tk.Tk):
         self._poll_board()
         self.refresh_jobs()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        if self._auto_start:
+            self.after(400, self._start_all)
 
     def _setup_logging(self) -> None:
         root = logging.getLogger()
@@ -85,14 +93,14 @@ class App(tk.Tk):
         ttk.Label(head, text="上新统一守护", style="Title.TLabel").pack(side="left")
         ttk.Label(
             head,
-            text="中间层混编  ·  公共→后端  ·  VIP→AI邮件（不展示明细）",
+            text="普通订阅→后端  ·  大客户VIP→AI邮件  ·  物流旁路守护",
             style="Hint.TLabel",
         ).pack(side="left", padx=12)
 
         top = ttk.Frame(self)
         top.pack(fill="x", padx=16, pady=6)
-        ttk.Button(top, text="启动守护", command=self.runner.start).pack(side="left")
-        ttk.Button(top, text="暂停", command=self.runner.pause).pack(side="left", padx=8)
+        ttk.Button(top, text="启动全部", command=self._start_all).pack(side="left")
+        ttk.Button(top, text="暂停搜索", command=self.runner.pause).pack(side="left", padx=8)
         ttk.Button(top, text="关闭软件", command=self._on_close).pack(side="left", padx=8)
         ttk.Button(top, text="刷新公共订阅", command=self.refresh_jobs).pack(side="right")
 
@@ -104,6 +112,7 @@ class App(tk.Tk):
             value=(
                 f"间隔 {settings.SCHEDULE_INTERVAL_MINUTES} 分钟  ·  "
                 f"VIP {'开' if vip.get('enabled') else '关'}  ·  "
+                f"物流旁路 {'开' if self._with_logistics else '关'}  ·  "
                 f"并发上限 {(settings.SEARCH_POOL or {}).get('max_workers', '-')}"
             )
         )
@@ -281,9 +290,22 @@ class App(tk.Tk):
             pass
         self.after(1000, self._poll_board)
 
+    def _start_all(self) -> None:
+        self.runner.start()
+        if self._with_logistics:
+            ok = self.logistics.start(poll_now=True, scrape_now=False)
+            if not ok:
+                messagebox.showwarning(
+                    "物流启动失败",
+                    self.logistics.last_error or "未知错误；搜索守护已启动，可稍后重试物流。",
+                )
+        self._poll_status()
+
     def _poll_status(self) -> None:
         try:
-            self.status_var.set(self.runner.status_text())
+            search = self.runner.status_text()
+            logi = self.logistics.status_text() if self._with_logistics else "物流=关闭"
+            self.status_var.set(f"{search}  |  {logi}")
         except Exception:
             pass
         self.after(1000, self._poll_status)
@@ -291,6 +313,10 @@ class App(tk.Tk):
     def _on_close(self) -> None:
         try:
             self.runner.stop()
+        except Exception:
+            pass
+        try:
+            self.logistics.stop()
         except Exception:
             pass
         self.destroy()
@@ -313,5 +339,13 @@ class App(tk.Tk):
         self.log_text.configure(state="disabled")
 
 
+def _parse_args(argv: List[str]) -> dict:
+    return {
+        "auto_start": "--auto-start" in argv or "--start" in argv,
+        "with_logistics": "--no-logistics" not in argv,
+    }
+
+
 if __name__ == "__main__":
-    App().mainloop()
+    opts = _parse_args(sys.argv[1:])
+    App(auto_start=opts["auto_start"], with_logistics=opts["with_logistics"]).mainloop()
